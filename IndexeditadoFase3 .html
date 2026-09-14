@@ -1,0 +1,645 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cotizador Metrológico | EX Scientia Veritas</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <!-- CSS se carga en la Parte 2 -->
+        <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+    <div class="app-shell">
+        <!-- BARRA LATERAL -->
+<aside class="sidebar" id="app-sidebar">
+    <button type="button" class="sidebar-toggle" id="sidebar-toggle-btn" onclick="toggleSidebar()">◀</button>
+    <div class="sidebar-body">
+        <nav class="sidebar-nav">
+            <button type="button" class="nav-item active" data-view="view-cotizador" onclick="cambiarVista('view-cotizador', this)"><span class="nav-icon">📋</span><span class="nav-label">Cotizador</span></button>
+            <button type="button" class="nav-item" data-view="view-clientes" onclick="cambiarVista('view-clientes', this)"><span class="nav-icon">👥</span><span class="nav-label">Clientes</span></button>
+            <button type="button" class="nav-item" data-view="view-estadisticas" onclick="cambiarVista('view-estadisticas', this)"><span class="nav-icon">📊</span><span class="nav-label">Estadísticas</span></button>
+            <button type="button" class="nav-item" data-view="view-historial" onclick="cambiarVista('view-historial', this)"><span class="nav-icon">📜</span><span class="nav-label">Historial</span></button>
+            <button type="button" class="nav-item" data-view="view-ot" onclick="cambiarVista('view-ot', this)"><span class="nav-icon">🛠️</span><span class="nav-label">Orden de Trabajo</span></button>
+        </nav>
+  <!-- ===== CONFIGURACIÓN API (OCULTABLE) ===== -->
+<div style="margin-top:20px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.15);">
+    <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleApiConfig()">
+        <span style="font-size:10px; color:rgba(255,255,255,0.6);">🔑 API</span>
+        <span id="api-toggle-icon" style="font-size:10px; color:rgba(255,255,255,0.4);">▼</span>
+    </div>
+    <div id="api-config-content" style="margin-top:6px; display:none;">
+        <div style="display:flex; gap:4px; align-items:center;">
+            <input type="password" id="api-token-input" placeholder="Token" value="" 
+                   style="flex:1; padding:3px 5px; border:1px solid rgba(255,255,255,0.2); border-radius:3px; background:rgba(255,255,255,0.1); color:#fff; font-size:9px; outline:none; width:100%; height:22px;">
+            <button onclick="guardarTokenAPI()" style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.2); color:#fff; border-radius:3px; padding:2px 6px; cursor:pointer; font-size:9px; white-space:nowrap; height:22px;">💾</button>
+            <button onclick="toggleTokenVisibility()" style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.2); color:#fff; border-radius:3px; padding:2px 6px; cursor:pointer; font-size:9px; white-space:nowrap; height:22px;">👁️</button>
+        </div>
+        <div style="font-size:7px; color:rgba(255,255,255,0.3); margin-top:2px;">Token de apiperu.dev</div>
+    </div>
+</div>
+    </div>
+</aside>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <div class="content-area">
+            <!-- BARRA SUPERIOR -->
+            <header class="app-topbar">
+                <div class="topbar-brand">
+                    <img src="https://i.postimg.cc/B6dqRr5K/Whats-App-Image-2026-08-12-at-3-04-12-PM.jpg" alt="Logo" class="topbar-logo-img">
+                    <div>
+                        <h1>EX Scientia Veritas, E.I.R.L.</h1>
+                        <p>Laboratorio de Metrología · Acreditación ISO/IEC 17025:2017 (Certificado L26-455 – PJLA)</p>
+                    </div>
+                </div>
+                <div class="topbar-right">
+                    <div class="topbar-contact"><div><b>Surquillo, Lima, Perú</b></div><div>(51) 945-529-944</div></div>
+                    <div class="topbar-actions">
+                        <select class="banner-select" onchange="ejecutarAccionArchivo(this)">
+                            <option value="" disabled selected>📂 Archivos</option>
+                            <option value="import-word">📄 Importar Word (.docx)</option>
+                            <option value="export-excel">📊 Exportar Excel (.xlsx)</option>
+                            <option value="import-excel">📥 Cargar Excel (.xlsx)</option>
+                            <option value="export-backup">💾 Respaldo Local (Exportar .json)</option>
+                            <option value="import-backup">📥 Respaldo Local (Cargar .json)</option>
+                        </select>
+                        <select class="banner-select" onchange="ejecutarAccionDocumento(this)">
+                            <option value="" disabled selected>🖨️ Documento PDF</option>
+                            <option value="toggle-pdf">📄 Ver / Ocultar PDF</option>
+                            <option value="download-pdf">📥 Descargar PDF</option>
+                        </select>
+                        <input type="file" id="word-file-input" accept=".docx" style="display:none;" onchange="procesarWordCliente(event)">
+                        <input type="file" id="excel-file-input" accept=".xlsx, .xls" style="display:none;" onchange="cargarDesdeExcel(event)">
+                        <input type="file" id="backup-file-input" accept=".json" style="display:none;" onchange="cargarRespaldoLocal(event)">
+                    </div>
+                </div>
+            </header>
+            
+            <!-- ===== PESTAÑA COTIZADOR ===== -->
+            <div class="page-view active" id="view-cotizador">
+                <div class="main-wrapper">
+                    <div>
+<div style="display: flex; justify-content: flex-end; padding: 10px 20px; background: #f8f9fa; border-bottom: 1px solid #dee2e6;">
+    <button onclick="iniciarNuevaCotizacion()" 
+            style="background:#c00000; color:white; border:2px solid #28a745; padding:6px 16px; border-radius:6px; font-weight:bold; font-size:14px; cursor:pointer;"
+            onmouseover="this.style.background='#8a0000'" 
+            onmouseout="this.style.background='#c00000'">
+        🗑 Iniciar Nueva Cotización
+    </button>
+</div>
+                        <div class="card">
+                            <h3>
+    <span>🏢 Datos del Cliente y Cotización 
+        <button type="button" class="btn btn-danger btn-sm" onclick="limpiarCliente()" title="Limpiar todos los datos del cliente" style="font-size:10px; padding:2px 8px; margin-left:8px;">🗑️ Limpiar</button>
+    </span>
+    <button type="button" class="btn-pill-ocultar" onclick="toggleOcultarCliente()" id="btn-toggle-cliente">Ocultar</button>
+</h3>
+                            <div class="form-grid" id="container-datos-cliente">
+                                <div class="form-group"><label>RUC</label><div style="display:flex; gap:5px;"><input type="text" id="in-ruc" value="20120507126" maxlength="11" oninput="updateDoc()" style="flex-grow:1;"><button class="btn btn-primary" onclick="buscarRUC()" style="padding:0 10px;">🔍 SUNAT</button></div></div>
+                                <div class="form-group"><label><span>N° Cotización</span><span class="action-link-red" onclick="siguienteNumeroCotizacion()" title="Correlativo">Correlativo</span></label><input type="text" id="in-cot" value="050-2026" oninput="updateDoc()"></div>
+                                <div class="form-group full"><label>Razón Social / Cliente</label><input type="text" id="in-cliente" value="CIMPO S.R.L" oninput="updateDoc()"></div>
+                                <div class="form-group full"><label>Dirección Fiscal</label><input type="text" id="in-dir" value="AV. JAVIER PRADO NRO. 8237 - ATE - LIMA" oninput="updateDoc()"></div>
+                                <div class="form-group"><label>Contacto</label><input type="text" id="in-contacto" value="Srta. Katya" oninput="updateDoc()"></div>
+                                <div class="form-group"><label>Teléfono</label><input type="text" id="in-tel" value="954 017 847" oninput="updateDoc()"></div>
+                                <div class="form-group"><label>Correo</label><input type="text" id="in-correo" value="No indica" oninput="updateDoc()"></div>
+                                <div class="form-group"><label>Asesor Comercial <span style="display:flex; gap:8px;"><span class="action-link" onclick="agregarAsesor()">+ Agregar</span><span class="action-link" style="color:#94a3b8;" onclick="eliminarAsesorSeleccionado()">🗑 Eliminar</span></span></label><select id="in-asesor" onchange="updateDoc()"><option value="Ing. Januusz Ruiz">Ing. Januusz Ruiz</option><option value="Ing. Januusz Ruiz Del Aguila">Ing. Januusz Ruiz Del Aguila</option></select></div>
+
+
+<!-- Contenedor único: ocupa ambas columnas de la cuadrícula -->
+<div style="grid-column: 1 / -1; display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 4px;">
+
+    <!-- FILA A: Fecha + Tiempo de Entrega + Observaciones (en línea) -->
+    <div style="display: flex; gap: 15px; align-items: end; width: 100%;">
+        <div style="flex: 1.2;">
+            <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:4px;">Fecha de Emisión</label>
+            <input type="date" id="in-fecha" onchange="updateDoc()" value="2026-08-17" style="width:100%; padding: 9px 12px; border:2px solid #000; border-radius:0; font-size:12px; background:#fff; box-sizing:border-box;">
+        </div>
+        <div style="flex: 1;">
+            <label style="font-size:10px; font-weight:600; color:#64748b; display:block; margin-bottom:4px;">⏱️ Tiempo de Entrega</label>
+            <input type="text" id="in-tiempo-entrega" value="5 días hábiles" style="width:100%; padding: 9px 8px; border:2px solid #000; border-radius:0; font-size:12px; background:#fff; box-sizing:border-box;">
+        </div>
+        <div style="flex: 2;">
+            <label style="font-size:11px; font-weight:600; color:#475569; display:block; margin-bottom:4px;">Observaciones</label>
+            <input type="text" id="in-observaciones" value="" oninput="updateDoc()" style="width:100%; padding: 9px 12px; border:2px solid #000; border-radius:0; font-size:12px; background:#fff; box-sizing:border-box;">
+        </div>
+    </div>
+
+<!-- FILA B: Estado + Condición + Condición de Pago -->
+<div style="display: flex; gap: 15px; align-items: end; width: 100%;">
+    <div style="flex: 1;">
+        <label style="font-size:10px; font-weight:600; color:#64748b; display:block; margin-bottom:4px;">Estado</label>
+        <input type="text" id="in-estado" value="" readonly style="width:100%; padding: 9px 8px; border:2px solid #000; border-radius:0; font-size:12px; background:#f1f5f9; color:#475569; cursor:default; box-sizing:border-box;">
+    </div>
+    <div style="flex: 1;">
+        <label style="font-size:10px; font-weight:600; color:#64748b; display:block; margin-bottom:4px;">Condición</label>
+        <input type="text" id="in-condicion" value="" readonly style="width:100%; padding: 9px 8px; border:2px solid #000; border-radius:0; font-size:12px; background:#f1f5f9; color:#475569; cursor:default; box-sizing:border-box;">
+    </div>
+    <div style="flex: 1.2;">
+        <label style="font-size:10px; font-weight:600; color:#64748b; display:block; margin-bottom:4px;">Condición de Pago</label>
+        <input type="text" id="in-condicion-pago" value="100% ADELANTADO" style="width:100%; padding: 9px 8px; border:2px solid #000; border-radius:0; font-size:12px; background:#fff; box-sizing:border-box;">
+    </div>
+</div>
+</div>
+</div>
+</div>
+        <div class="card">
+    <h3><span id="titulo-agregar-instrumentos">⚙️ Agregar Instrumentos para Calibración</span></h3>
+    <!-- NUEVO: Tipo de Servicio + Magnitud/Área + Equipo en una sola fila -->
+<div style="display: flex; gap: 15px; align-items: end; width: 100%; margin-bottom:12px;">
+    <div class="form-group" style="flex: 1;">
+        <label><b>Tipo de Servicio</b></label>
+    <select id="tipo-servicio-select" onchange="cambiarTipoServicio()">
+    <option value="calibracion">Calibración</option>
+    <option value="mantenimiento">Mantenimiento</option>
+    <option value="verificacion">Verificación</option>
+    <option value="ventacalibracion">Venta y Calibración</option>
+</select>
+    </div>
+    <div class="form-group" style="flex: 1;">
+        <label>Magnitud / Área</label>
+        <select id="item-magnitud" onchange="actualizarDesplegablesDependientes()">
+            <option value="">Seleccione magnitud...</option>
+            <option value="Química">Química</option>
+            <option value="Dimensional">Dimensional</option>
+            <option value="Mecánica">Mecánica / Presión / Flujo</option>
+            <option value="Volumen">Volumen / Material de Vidrio</option>
+            <option value="Masa/Fuerza">Masa y Fuerza</option>
+            <option value="Termodinámica">Termodinámica</option>
+            <option value="Tiempo/Frecuencia">Tiempo y Frecuencia</option>
+            <option value="Óptica">Óptica</option>
+        </select>
+    </div>
+    <div class="form-group" style="flex: 1.3;">
+        <label>Equipo / Instrumento <span style="display:flex; gap:8px;"><span class="action-link" onclick="agregarEquipo()">+ Agregar</span><span class="action-link" style="color:#94a3b8;" onclick="eliminarEquipoSeleccionado()">🗑 Eliminar</span></span></label>
+        <select id="item-equipo" disabled onchange="actualizarMarcasPorEquipo()">
+            <option value="">Primero seleccione magnitud</option>
+        </select>
+    </div>
+</div>
+    <div class="form-grid-4" style="margin-bottom:12px;">
+        <div class="form-group"><label>Marca <span style="display:flex; gap:8px;"><span class="action-link" onclick="agregarMarcaEspecial()">+ Nueva</span><span class="action-link" style="color:#94a3b8;" onclick="eliminarMarcaSeleccionada()">🗑 Eliminar</span></span></label><select id="item-marca-select"><option value="No Indica">No Indica</option><option value="S/I">S/I</option></select></div>
+        <div class="form-group"><label>Modelo</label><input type="text" id="item-modelo" value="No Indica"></div>
+        <div class="form-group"><label>Serie</label><input type="text" id="item-serie" value="No Indica"></div>
+        <div class="form-group"><label>Código</label><input type="text" id="item-codigo" value="No Indica"></div>
+    </div>
+                            <div class="form-grid full" style="margin-bottom:12px;">
+                                <div class="form-group full"><label>Procedimiento <span style="display:flex; gap:8px;"><span class="action-link" onclick="agregarProcedimiento()">+ Nuevo</span><span class="action-link" style="color:#94a3b8;" onclick="eliminarProcedimientoSeleccionado()">🗑 Eliminar</span></span></label><select id="item-proc" disabled onchange="procesarProcedimientoInput()"><option value="">Primero seleccione magnitud</option></select></div>
+                            </div>
+                            <div class="form-grid full" style="margin-bottom:12px;" id="puntos-container">
+                                <div class="form-group full"><label id="puntos-label">Puntos de Calibración</label><div style="display:flex; gap:10px; align-items:flex-start;"><button type="button" class="btn btn-amber btn-sm" id="btn-config-puntos" onclick="abrirModalPuntos()" style="white-space:nowrap; height:38px;">⚙️ Configurar Puntos</button><div id="puntos-preview-chips" style="flex:1; min-height:38px; border:1px solid var(--border-color); border-radius:6px; padding:6px 10px; background:#fafafa; display:flex; flex-wrap:wrap; gap:6px; align-items:center;"></div></div></div>
+                            </div>
+                            <div class="form-grid full" style="margin-bottom:12px; display:none;" id="puntos-texto-container">
+                                <div class="form-group full"><label>Puntos / Especificaciones (texto libre)</label><textarea id="puntos-texto" rows="2" placeholder="Ej: 20°C, 50%HR..." style="padding:8px; border:2px solid #000; border-radius:0; width:100%; font-size:12px;"></textarea></div>
+                            </div>
+                            <div class="form-grid full" style="margin-bottom:12px; display:none;" id="actividades-container">
+                                <div class="form-group full"><label>Actividades</label><div style="display:flex; gap:10px;"><button type="button" class="btn btn-amber btn-sm" onclick="abrirModalActividades()">✏️ Editar Actividades</button><div id="actividades-preview" style="flex:1; border:2px solid #000; border-radius:0; padding:6px 10px; background:#fafafa; font-size:11px; color:#475569; min-height:38px;"></div></div></div>
+                            </div>
+                            <div class="form-grid">
+                                <div class="form-group">
+    <label>
+        Alcance / Capacidad (Opcional)
+        <span style="display:flex; gap:8px; margin-left:8px;">
+            <span class="action-link" onclick="agregarUnidadAlcance()">+ Unidad</span>
+            <span class="action-link" style="color:#94a3b8;" onclick="eliminarUnidadAlcance()">🗑 Eliminar</span>
+        </span>
+    </label>
+    <div id="alcance-fields-container" style="display:flex; flex-direction:column; gap:6px; padding:2px 0;"></div>
+</div>
+                                <div class="form-group"><label>Lugar de Atención</label><select id="item-lugar"><option value="Laboratorio">Laboratorio</option><option value="In situ">Campo (In-Situ)</option></select></div>
+                               <div class="form-group full" id="fila-acreditacion"><div style="display:grid; grid-template-columns:max-content 240px minmax(0,1fr); align-items:center; gap:10px; width:100%;"><label style="color:var(--primary-red); margin:0; white-space:nowrap;">Acreditación</label><select id="item-tipo" style="border-color:var(--primary-red); font-weight:bold; width:100%; min-width:0; padding:10px 12px;"><option value="ACREDITADO">ACREDITADO</option><option value="NO ACREDITADO">NO ACREDITADO</option><option value="NO APLICA">NO APLICA</option></select>     <div id="nota-row" style="min-width:0; width:100%; grid-column: 3; display:flex; align-items:center; gap:8px;"><label style="font-size:11px; color:#64748b; font-weight:600; white-space:nowrap; margin:0;">NOTA</label><input type="text" id="item-nota" placeholder="Ej: Venta registrador multicanal" style="flex:1; min-width:0; padding:8px 10px; border:1px solid var(--border-color); border-radius:6px; font-size:12px; box-sizing:border-box;"></div></div></div>
+                            </div>
+                            <div class="form-grid-3" style="margin-top:12px;">
+    <div class="form-group"><label>Valor Unitario (S/) <span style="display:flex; gap:8px;"><span class="action-link" onclick="agregarPrecio()">+ Agregar</span><span class="action-link" style="color:#94a3b8;" onclick="eliminarPrecioSeleccionado()">🗑 Eliminar</span></span></label><select id="item-precio"><option value="50">50</option><option value="100">100</option><option value="120">120</option><option value="150">150</option><option value="180">180</option><option value="200" selected>200</option><option value="220">220</option><option value="250">250</option><option value="300">300</option></select> 
+ <button onclick="limpiarPreciosDuplicados()" style="background:orange; color:white; padding:6px 12px; border:none; border-radius:6px; cursor:pointer; margin-top:6px;">🧹 Limpiar precios duplicados (usar 1 vez)</button>   </div>
+                                <div class="form-group"><label>Cantidad</label><input type="number" id="item-cant" value="1" min="1" step="1"></div>
+                                <div class="form-group"><label>Descuento (S/)</label><select id="item-dscto"><option value="0">0</option><option value="10">10</option><option value="20">20</option><option value="30">30</option><option value="40">40</option><option value="50">50</option></select></div>
+                            </div>
+
+<div class="form-group full" style="margin-top:12px;">
+<div class="viaticos-row" id="viaticos-row">
+    <label class="viaticos-control"><input type="checkbox" id="check-viaticos" onChange="toggleViaticos()"><span>Incluir viáticos (S/</span><input type="number" id="viaticos-monto" value="50" min="0" step="5" style="padding:6px 8px; border:1px solid var(--border-color); border-radius:4px; font-size:13px;"><span>)</span></label>
+<textarea id="viaticos-desc" rows="2" style="padding:8px 10px; border:1px solid var(--border-color); border-radius:6px; font-size:12px; resize:vertical; font-family:inherit;" placeholder="Descripción">Viáticos por transporte y estadía en la ciudad de
+Trujillo, 0x personas por 0x dias Pasajes ida y
+vuelta : Lima-trujillo-Lima: S/. xxx (0x personas)
+Hospedaje * 0x noches: S/. xxx ( 0x personas)
+Alimentacion: S/. xxx soles ( 0x Personas)
+Transporte de patrones y equipos del laboratorio
+ida y vuelta: S/. xx soles</textarea>
+    <label class="viaticos-control"><span>Dscto (S/</span><input type="number" id="viaticos-dscto" value="0" min="0" step="5" style="padding:6px 8px; border:1px solid var(--border-color); border-radius:4px; font-size:13px;"><span>)</span></label>
+</div>
+</div>
+                            <div id="editing-banner" style="display:none; background:#fff7ed; border:1px solid #fdba74; color:#9a3412; font-size:11px; font-weight:600; padding:8px 12px; border-radius:6px; margin-top:12px; align-items:center; justify-content:space-between; gap:8px;"><span id="editing-banner-text">✏️ Editando instrumento...</span><span style="cursor:pointer; text-decoration:underline; font-weight:normal;" onclick="cancelarEdicionItem()">Cancelar</span></div>
+                            <button class="btn btn-success btn-block" style="margin-top:15px;" onclick="addItem()" id="btn-add-item">+ Añadir Instrumento al Detalle</button>
+<table class="summary-table" id="ui-items-table" style="margin-top:15px;"><thead><tr><th style="width:28px; text-align:center;">Nº</th><th class="equipo">Equipo</th><th class="tipo">Tipo</th><th class="total">Total (Neto)</th><th class="acciones">Acción</th></tr></thead><tbody></tbody></table>
+                            <p style="font-size:10px; color:#94a3b8; margin-top:6px;">💡 Haz clic en cualquier fila de la tabla para editar ese instrumento.</p>
+<button onclick="finalizarCotizacion()" 
+        style="background:#c00000; color:white; border:2px solid #28a745; padding:6px 16px; border-radius:6px; font-weight:bold; font-size:14px; cursor:pointer; margin-top:10px;"
+        onmouseover="this.style.background='#8a0000'" 
+        onmouseout="this.style.background='#c00000'">
+    ✅ Finalizar Cotización
+</button>
+                        </div>
+<!-- ====== VISOR COMPACTO (DEBAJO DE LA TABLA) ====== -->
+<div style="
+    margin: 15px 0; 
+    padding: 10px 12px; 
+    background: #ffffff; 
+    border-radius: 6px; 
+    border: 1px solid #dee2e6;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+">
+    <div style="
+        display: flex; 
+        align-items: center; 
+        justify-content: flex-start; 
+        gap: 6px; 
+        margin-bottom: 6px;<!-- ====== VISOR COMPACTO 
+    ">
+        <span style="font-size: 13px;">📄</span>
+        <span style="
+            color: #1a237e; 
+            font-size: 11px; 
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        ">
+            Información Institucional
+        </span>
+        <span style="
+            background: #1a237e; 
+            color: white; 
+            padding: 0px 7px; 
+            border-radius: 10px; 
+            font-size: 8px;
+            font-weight: bold;
+        ">
+            EXSV
+        </span>
+    </div>
+
+    <div style="
+        position: relative; 
+        padding-bottom: 55%; 
+        height: 0; 
+        overflow: hidden; 
+        border-radius: 4px; 
+        border: 1px solid #e9ecef;
+        background: #f8f9fa;
+    ">
+        <iframe 
+            src="PAGacre.pdf" 
+            style="
+                position: absolute; 
+                top: 0; 
+                left: 0; 
+                width: 100%; 
+                height: 100%; 
+                border: none; 
+                border-radius: 4px;
+            "
+            allowfullscreen
+            loading="lazy"
+        ></iframe>
+    </div>
+
+    <div style="
+        display: flex; 
+        justify-content: flex-start; 
+        gap: 10px; 
+        margin-top: 4px;
+    ">
+        <span style="color: #868e96; font-size: 9px;">📌 Certificado</span>
+        <span style="color: #868e96; font-size: 9px;">📞 Contacto</span>
+        <span style="color: #868e96; font-size: 9px;">🔬 Equipos</span>
+    </div>
+</div>
+                    </div>
+
+                    <div>
+                        <div class="totals-card"><h3>📊 Resumen de Cotización</h3><div class="total-row"><span>Subtotal:</span><span id="lbl-subtotal">S/ 0.00</span></div><div class="total-row"><span>IGV (18%):</span><span id="lbl-igv">S/ 0.00</span></div><div class="total-row final"><span>Total Estimado:</span><span id="lbl-total">S/ 0.00</span></div><button class="btn btn-success btn-block" style="margin-top:15px;" onclick="togglePDFModal()">👁️ Ver Documento PDF</button><button class="btn btn-primary btn-block" style="margin-top:8px;" onclick="guardarEnHistorial()">💾 Guardar en Historial</button></div>  
+ <button class="btn btn-success btn-block" style="background:#2e7d32; margin-top:8px;" onclick="descargarPDFCompleto()">
+    📄 Descargar Cotización + Información
+</button>
+                        <div class="history-card"><h4>📜 Historial de Cotizaciones</h4><div class="form-group" style="margin-bottom:8px;"><select id="select-historial"><option value="">Seleccione cotización guardada...</option></select></div><div style="display:flex; gap:6px;"><button class="btn btn-success btn-sm" style="flex:1;" onclick="cargarDesdeHistorial()">👁️ Ver</button><button class="btn btn-primary btn-sm" style="flex:1;" onclick="descargarDesdeHistorial()">📥 Descargar</button><button class="btn btn-danger btn-sm" onclick="eliminarDesdeHistorial()">🗑️</button></div> </div>  
+<div style="display: flex; justify-content: center; margin-top: 6px;">
+    <button class="btn btn-primary btn-sm" style="flex: 0 1 auto; min-width: 200px;" onclick="actualizarCotizacion()">🔄 Actualizar Cotización</button>
+</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PESTAÑAS CLIENTES, ESTADÍSTICAS, HISTORIAL -->
+            <div class="page-view" id="view-clientes"><div class="full-wrapper"><div class="card"><h3><span>👥 Clientes</span></h3><p style="font-size:11.5px; color:#64748b; margin-bottom:14px;">Se arma automáticamente a partir de las cotizaciones guardadas en el Historial.</p><div style="overflow-x:auto;"><table class="data-table" id="tabla-clientes"><thead><tr><th>Cliente</th><th>RUC</th><th>Contacto</th><th>Teléfono</th><th>N° Cotizaciones</th><th>Monto Total (S/)</th><th>Última Cotización</th></tr></thead><tbody></tbody></table></div></div></div></div>
+
+           <div class="page-view" id="view-estadisticas"><div class="full-wrapper">
+<div style="display:flex; gap:10px; margin-bottom:14px;"><button class="btn-pill-ocultar" id="btn-stat-general" onclick="cambiarVistaEstadistica('general')" style="background:var(--green-brand); color:#fff;">📊 General</button><button class="btn-pill-ocultar" id="btn-stat-cliente" onclick="cambiarVistaEstadistica('cliente')">👥 Por Cliente</button></div>
+<div id="stat-seccion-general">
+<div class="stat-card-row"><div class="stat-card"><div class="stat-label">Cotizaciones guardadas</div><div class="stat-value" id="stat-total-cotizaciones">0</div></div><div class="stat-card"><div class="stat-label">Equipos cotizados</div><div class="stat-value" id="stat-total-equipos">0</div></div><div class="stat-card"><div class="stat-label">Monto total cotizado</div><div class="stat-value" id="stat-monto-total">S/ 0.00</div></div><div class="stat-card"><div class="stat-label">Ticket promedio</div><div class="stat-value" id="stat-promedio">S/ 0.00</div></div><div class="stat-card"><div class="stat-label">Viáticos totales</div><div class="stat-value" id="stat-viaticos-total">S/ 0.00</div></div></div>
+<div class="card"><h3><span>📊 Equipos cotizados por Magnitud</span></h3><div id="stat-magnitud-breakdown"></div></div>
+</div>
+<div id="stat-seccion-cliente" style="display:none;">
+<div class="card"><label style="font-size:12px; font-weight:600; color:#475569;">Seleccione cliente:</label><select id="stat-select-cliente" onchange="renderEstadisticasCliente()" style="width:100%; margin-top:6px;"><option value="">-- Seleccione --</option></select></div>
+<div id="stat-cliente-detalle"></div>
+</div>
+</div></div>
+
+<div class="page-view" id="view-historial"><div class="full-wrapper"><div class="card"><h3><span>📜 Historial de Cotizaciones</span></h3><div style="overflow-x:auto;"><table class="data-table" id="tabla-historial-completo"><thead><tr><th>N° Cotización</th><th>Cliente</th><th>RUC</th><th>Fecha</th><th>Ítems</th><th>Viáticos (S/)</th><th>Total (S/)</th><th>Acciones</th></tr></thead><tbody></tbody></table></div></div></div></div>
+
+            <!-- ===== PESTAÑA ORDEN DE TRABAJO ===== -->
+            <div class="page-view" id="view-ot">
+                <div class="full-wrapper">
+                    <div class="card">
+                        <h3><span>🛠️ Orden de Trabajo Interno</span><button type="button" class="btn btn-primary btn-sm" onclick="cargarDatosOTDesdeCotizacion()">⬇ Cargar desde Cotización actual</button></h3>
+                        <div class="form-grid-3" style="margin-bottom:12px;">
+                            <div class="form-group">
+                                <label>OTI - N° <span class="action-link-red" onclick="siguienteNumeroOT()" title="Correlativo">Correlativo</span></label>
+                                <input type="text" id="ot-numero" class="ot-field-input" placeholder="Ej: 001-2026" value="001-2026">
+                            </div>
+                            <div class="form-group"><label>Fecha</label><input type="date" id="ot-fecha" class="ot-field-input"></div>
+                            <div class="form-group"><label>Laboratorio</label><input type="text" id="ot-laboratorio" class="ot-field-input" value="EX Scientia Veritas"></div>
+                        </div>
+                        <div class="form-grid-3" style="margin-bottom:12px;">
+                            <div class="form-group"><label>Empresa</label><input type="text" id="ot-empresa" class="ot-field-input"></div>
+                            <div class="form-group"><label>RUC</label><input type="text" id="ot-ruc" class="ot-field-input"></div>
+                            <div class="form-group"><label>E-mail</label><input type="text" id="ot-correo" class="ot-field-input"></div>
+                        </div>
+                        <div class="form-grid-3" style="margin-bottom:12px;">
+                            <div class="form-group"><label>Contacto</label><input type="text" id="ot-contacto" class="ot-field-input"></div>
+                            <div class="form-group"><label>Teléfono</label><input type="text" id="ot-telefono" class="ot-field-input"></div>
+                            <div class="form-group"><label>Prioridad</label><select id="ot-prioridad" class="ot-field-input"><option value="Alta">Alta</option><option value="Media" selected>Media</option><option value="Baja">Baja</option></select></div>
+                        </div>
+                        <div class="form-grid-3" style="margin-bottom:12px;">
+                            <div class="form-group"><label>Expediente</label><input type="text" id="ot-expediente" class="ot-field-input"></div>
+                            <div class="form-group"><label>Cotización N°</label><input type="text" id="ot-cotizacion" class="ot-field-input"></div>
+                            <div class="form-group"><label>Factura N°</label><input type="text" id="ot-factura" class="ot-field-input"></div>
+                        </div>
+                        <div class="form-grid-3" style="margin-bottom:12px;">
+                            <div class="form-group"><label>Guía N°</label><input type="text" id="ot-guia" class="ot-field-input"></div>
+                            <div class="form-group"><label>Eq. Entregar en</label><input type="text" id="ot-entregar" class="ot-field-input" value="NO APLICA"></div>
+                            <div class="form-group"><label>Datos para certificado — Nombre</label><input type="text" id="ot-cert-nombre" class="ot-field-input"></div>
+                        </div>
+                        <div class="form-grid full" style="margin-bottom:12px;">
+                            <div class="form-group full"><label>Datos para certificado — Dirección</label><input type="text" id="ot-cert-direccion" class="ot-field-input"></div>
+                        </div>
+                        <div style="overflow-x:auto; margin-top:10px;">
+                            <table class="data-table" id="tabla-ot">
+                                <thead><tr><th style="width:3%;">N°</th><th style="width:22%;">Servicio</th><th style="width:22%;">Procedimiento</th><th style="width:13%;">Rango (Alcance)</th><th style="width:13%;">Incertidumbre</th><th style="width:13%;">Código o Serie</th><th style="width:14%;">Fecha de Compromiso</th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                        <div class="form-grid full" style="margin-top:16px;">
+                            <div class="form-group full"><label>Observaciones</label><input type="text" id="ot-observaciones" class="ot-field-input"></div>
+                            <div class="form-group full"><label>Condiciones de Calibración</label><input type="text" id="ot-condiciones" class="ot-field-input"></div>
+                        </div>
+                        <div style="display:flex; gap:10px; margin-top:16px; flex-wrap:wrap;">
+                            <button type="button" class="btn btn-success" onclick="verPDFOrdenTrabajo()">👁️ Ver / Generar PDF</button>
+                            <button type="button" class="btn btn-primary" onclick="descargarPDFOrdenTrabajo()">📥 Descargar PDF</button>
+                            <button type="button" class="btn btn-amber" onclick="guardarEnHistorialOT()">💾 Guardar en Historial de OT</button>
+                            <button type="button" class="btn btn-info" onclick="abrirHistorialOT()">📋 Ver Historial de OT</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODALES ===== -->
+    <!-- Modal Puntos -->
+    <div class="pdf-modal-overlay" id="modalPuntos"><div class="modal-box"><h3 style="color:var(--primary-red); margin-bottom:12px; font-size:14px; border-bottom:2px solid #fee2e2; padding-bottom:6px;">⚙️ Configurar Puntos</h3><p style="font-size:11px; color:#64748b; margin-bottom:12px;">Ingrese valores separados por coma o rangos.</p>     <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; align-items:center;">
+    <input type="text" id="modal-punto-val" placeholder="Ej: 20, 30, 50" style="flex:2; padding:8px; border:1px solid var(--border-color); border-radius:6px; font-size:12px; min-width:120px;">
+    <select id="modal-punto-unidad" style="flex:1; padding:8px; border:1px solid var(--border-color); border-radius:6px; font-size:12px; min-width:80px;"></select>
+    <span style="display:flex; gap:6px; align-items:center;">
+        <span class="action-link" onclick="agregarUnidadPunto()" style="font-size:11px;">+ Unidad</span>
+        <span class="action-link" style="color:#94a3b8; font-size:11px;" onclick="eliminarUnidadPunto()">🗑 Eliminar</span>
+    </span>
+    <button type="button" class="btn btn-primary btn-sm" onclick="agregarPuntoChip()">+ Añadir</button>
+</div>  <div id="modal-punto-isotermico" style="display:none; margin-bottom:14px; padding:10px; border:1px dashed #fca5a5; border-radius:6px; background:#fff5f5;"><label style="font-size:11px; font-weight:bold; color:var(--primary-red); display:block; margin-bottom:6px;">Tolerancia del punto seleccionado</label><div style="display:flex; gap:6px; align-items:center; flex-wrap:nowrap;"><span style="font-weight:bold; font-size:13px;">±</span><input type="text" id="modal-iso-tolerancia" placeholder="4" style="width:65px; padding:7px; border:1px solid var(--border-color); border-radius:6px; font-size:12px;"><select id="modal-iso-unidad" style="width:75px; padding:7px; border:1px solid var(--border-color); border-radius:6px; font-size:12px;"></select><button type="button" class="btn btn-amber btn-sm" onclick="agregarPuntoIsotermico()">+ Aplicar tolerancia</button></div></div><div style="margin-bottom:15px;"><label style="font-size:11px; font-weight:bold; color:#475569;">Puntos agregados:</label><div id="modal-chips-container" class="chips-container" style="min-height:40px; border:1px dashed #cbd5e1; padding:8px; border-radius:6px; background:#fafafa;"></div></div><div style="display:flex; justify-content:flex-end; gap:8px;"><button type="button" class="btn btn-danger btn-sm" onclick="cerrarModalPuntos(false)">Cancelar</button><button type="button" class="btn btn-success btn-sm" onclick="cerrarModalPuntos(true)">Guardar</button></div></div></div>
+
+    <!-- Modal Actividades -->
+    <div class="pdf-modal-overlay" id="modalActividades"><div class="modal-box" style="max-width:650px;"><h3 style="color:var(--primary-red); margin-bottom:12px; font-size:14px; border-bottom:2px solid #fee2e2; padding-bottom:6px;">📝 Actividades de Mantenimiento</h3><p style="font-size:11px; color:#64748b; margin-bottom:12px;">Agregue las actividades con su respectivo checkbox.</p><div id="actividades-lista" style="margin-bottom:12px;"></div><div style="display:flex; gap:8px; margin-bottom:12px;"><input type="text" id="nueva-actividad-input" placeholder="Nueva actividad..." style="flex:1; padding:8px; border:2px solid #000; border-radius:0; font-size:12px;"><button type="button" class="btn btn-primary btn-sm" onclick="agregarActividad()">+ Añadir</button></div><div style="display:flex; justify-content:flex-end; gap:8px;"><button type="button" class="btn btn-danger btn-sm" onclick="cerrarModalActividades(false)">Cancelar</button><button type="button" class="btn btn-success btn-sm" onclick="cerrarModalActividades(true)">Guardar</button></div></div></div>
+
+    <!-- Modal Historial OT -->
+    <div class="pdf-modal-overlay" id="modalHistorialOT">
+        <div class="modal-box historial-ot-modal">
+            <h3 style="color:var(--primary-red); margin-bottom:12px; font-size:16px; border-bottom:2px solid #fee2e2; padding-bottom:8px;">📋 Historial de Órdenes de Trabajo</h3>
+            <input type="text" id="buscar-historial-ot" class="historial-ot-search" placeholder="🔍 Buscar por cliente / empresa..." oninput="filtrarHistorialOT()">
+            <div class="historial-ot-scroll">
+                <table class="historial-ot-table" id="tabla-historial-ot">
+                    <thead><tr>
+                        <th class="col-num">N° OT</th>
+                        <th class="col-cliente">Cliente / Empresa</th>
+                        <th class="col-fecha">Fecha Creación</th>
+                        <th class="col-items">Ítems</th>
+                        <th class="col-fecha-compromiso">Fecha Compromiso</th>
+                        <th class="col-acciones">Acciones</th>
+                    </tr></thead>
+                    <tbody id="cuerpo-historial-ot"></tbody>
+                </table>
+            </div>
+            <div style="display:flex; justify-content:flex-end; margin-top:12px;"><button type="button" class="btn btn-danger" onclick="cerrarHistorialOT()">Cerrar</button></div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL PDF DE COTIZACIÓN (SOLO PÁGINA 1) ===== -->
+    <div class="pdf-modal-overlay" id="pdfModal">
+        <button class="modal-close-bar" onclick="togglePDFModal()">✕ Cerrar</button>
+
+        <!-- ===== PÁGINA 1: COTIZACIÓN (PRINCIPAL) ===== -->
+        <div class="a4-landscape" id="pagina-cotizacion">
+            <div class="header">
+                <img src="https://i.postimg.cc/B6dqRr5K/Whats-App-Image-2026-08-12-at-3-04-12-PM.jpg" alt="Logo" style="max-height:85px; width:auto; object-fit:contain;">
+                <div class="title-center">
+                    <h1>LABORATORIO DE CALIBRACION ACREDITADO CON PJLA-USA</h1>
+                    <h2>Accreditation # 135715</h2>
+                </div>
+                <div class="header-right">
+                    <table class="ruc-table">
+                        <tr><th>RUC : 20554508112</th></tr>
+                        <tr><th class="bg-green-title">Cotización</th></tr>
+                        <tr><td id="out-cot"># 040b-2026</td></tr>
+                    </table>
+                </div>
+            </div>
+            <div class="sub-header">
+                <div class="address">Calle Las Codornices 223A - Surquillo - Lima - Perú</div>
+                <div class="services-box">Mantenimiento - Fabricación - Verificación - Calibración - Venta de equipos e instrumentos de medición</div>
+            </div>
+            <div class="info-grid">
+                <div class="info-col">
+                    <div class="info-row"><div class="info-label">Cliente</div><div class="info-separator">:</div><div class="info-value" id="out-cliente">CIMPO S.R.L</div></div>
+                    <div class="info-row"><div class="info-label">RUC</div><div class="info-separator">:</div><div class="info-value" id="out-ruc">20120507126</div></div>
+                    <div class="info-row"><div class="info-label">Dirección</div><div class="info-separator">:</div><div class="info-value" id="out-dir">AV. JAVIER PRADO NRO. 8237 - ATE - LIMA</div></div>
+                    <div class="info-row"><div class="info-label">Contacto</div><div class="info-separator">:</div><div class="info-value" id="out-contacto">Srta. Katya</div></div>
+                    <div class="info-row"><div class="info-label">Teléfono</div><div class="info-separator">:</div><div class="info-value" id="out-tel">954 017 847</div></div>
+                    <div class="info-row"><div class="info-label">Correo</div><div class="info-separator">:</div><div class="info-value" id="out-correo">No indica</div></div>
+                    <div class="info-row"><div class="info-label">Observaciones</div><div class="info-separator">:</div><div class="info-value" id="out-observaciones">Ninguna</div></div>
+                </div>
+                <div class="info-col">
+                    <div class="info-row"><div class="info-label">Asesor Comercial</div><div class="info-separator">:</div><div class="info-value" id="out-asesor">Ing. Januusz Ruiz</div></div>
+     <div class="info-row"><div class="info-label">Condición Pago</div><div class="info-separator">:</div><div class="info-value" id="out-condicion-pago">100% Adelantado</div></div>
+ <div class="info-row">
+        <div class="info-label">Tiempo de Entrega</div>
+        <div class="info-separator">:</div>
+        <div class="info-value" id="out-tiempo-entrega">5 días hábiles</div>
+    </div>
+                    <br>
+                    <div class="info-row"><div class="info-label">Validez Oferta</div><div class="info-separator">:</div><div class="info-value">30 días</div></div>
+                    <div class="info-row"><div class="info-label">Moneda</div><div class="info-separator">:</div><div class="info-value">Soles</div></div>
+                    <div class="info-row"><div class="info-label">Fecha Emision</div><div class="info-separator">:</div><div class="info-value" id="out-fecha">17 de Agosto de 2026</div></div>
+                    <div class="info-row"><div class="info-label">Alcance Acreditado</div><div class="info-separator">:</div><div class="info-value"><a href="https://bit.ly/AlcancePJLA-USA" class="link-red">https://bit.ly/AlcancePJLA-USA</a></div></div>
+                </div>
+            </div>
+            <div class="greeting">Estimado(a): <span id="out-contacto-greet" style="text-transform:uppercase;">Srta. Katya</span><br>Agradecemos su requerimiento y procedemos a cotizar, sujeto a confirmación final, lo siguiente:</div>
+            <table class="items-table">
+                <thead><tr>
+                    <th style="width:3%;">Item</th>
+                    <th style="width:25%;">Descripción</th>
+                    <th style="width:25%;">Procedimiento</th>
+                    <th style="width:10%;">Puntos de Calibración</th>
+                    <th style="width:7%;">Lugar</th>
+                    <th style="width:8%;">Tipo de Servicio</th>
+                    <th style="width:6%;">Descuento S/</th>
+                    <th style="width:6%;">Valor Unitario S/</th>
+                    <th style="width:4%;">Cantidad</th>
+                    <th style="width:6%;">Importe Total S/</th>
+                </tr></thead>
+                <tbody id="print-table-body"></tbody>
+            </table>
+            <div class="pdf-footer-block">
+                <div class="footer-section">
+                    <div class="footer-details">
+                        <b>Detalles del servicio:</b><br>
+                     <select class="service-detail-select" id="out-servicio-detalle" onchange="guardarEstadoLocal()">
+                            <option value="El servicio de calibración se realizará utilizando procedimientos de Nacionales - INACAL.">El servicio de calibración se realizará utilizando procedimientos de Nacionales - INACAL.</option>
+                            <option value="El servicio de calibración se realizará utilizando procedimientos de Nacionales - INACAL, internacionales CEM-ESPAÑA y procedimientos propios.">El servicio de calibración se realizará utilizando procedimientos de Nacionales - INACAL, internacionales CEM-ESPAÑA y procedimientos propios.</option>
+                        </select>
+                    </div>
+                    <div>
+                        <table class="totals-table">
+                            <tr><td>Descuento:</td><td id="t-descuento">S/. 0,00</td></tr>
+                            <tr><td>Sub total:</td><td id="t-subtotal">0,00</td></tr>
+                            <tr><td>IGV (18%):</td><td id="t-igv">0,00</td></tr>
+                            <tr class="total-row"><td style="text-align:right; font-weight:bold;">Total:</td><td id="t-total" style="text-align:right; font-weight:bold;">0,00</td></tr>
+                        </table>
+                    </div>
+                </div>
+                <div class="amount-words-box" id="out-monto-letras">Son: Cero con 00/100 SOLES INCLUIDO EL IGV.</div>
+            </div>
+            <!-- Pie de página fijo (sin raya) -->
+            <div class="footer-fixed">
+                <div class="footer-left"><div>F-PVEN-01.2</div><div>05</div><div>06/02/2026</div></div>
+                <div class="footer-right"><div>Pág. 1 de 1</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL PDF DE ORDEN DE TRABAJO ===== -->
+<div class="pdf-modal-overlay" id="otPdfModal">
+    <button class="modal-close-bar" onclick="toggleOTPDFModal()">✕ Cerrar</button>
+    <div class="ot-a4-portrait" id="ot-print-area">
+        
+        <!-- CABECERA CON LOGO -->
+        <div class="header" style="margin-bottom:8px;">
+            <img src="https://i.postimg.cc/B6dqRr5K/Whats-App-Image-2026-08-12-at-3-04-12-PM.jpg" alt="Logo" style="max-height:70px; width:auto; object-fit:contain;">
+            <div class="title-center" style="flex-grow:1; text-align:center;">
+                <h1 style="font-size:14px; font-weight:bold;">EX SCIENTIA VERITAS, E.I.R.L.</h1>
+                <p style="font-size:9px; font-weight:bold;">Laboratorio de Calibración Acreditado con PJLA-USA</p>
+                <p style="font-size:8px;">Accreditation # 135715</p>
+            </div>
+            <div style="width:100px; text-align:right; font-size:9px; font-weight:bold;">
+                <span id="ot-out-numero" style="display:block;">001-2026</span>
+                <span style="font-size:7px;">OTI - N°</span>
+            </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; margin-bottom:10px;">
+            <div><b>OTI - N° :</b> <span id="ot-out-numero2">-</span></div>
+            <div><b>FECHA:</b> <span id="ot-out-fecha">-</span></div>
+        </div>
+
+        <!-- DATOS DEL CLIENTE -->
+        <table style="width:100%; border-collapse:collapse; font-size:10px; margin-bottom:8px;">
+            <tr>
+                <td style="width:33%; padding:4px; border:1px solid #000;"><b>EMPRESA:</b> <span id="ot-out-empresa"></span></td>
+                <td style="width:34%; padding:4px; border:1px solid #000;"><b>EXPEDIENTE:</b> <span id="ot-out-expediente"></span></td>
+                <td style="width:33%; padding:4px; border:1px solid #000;"><b>LABORATORIO:</b> <span id="ot-out-laboratorio"></span></td>
+            </tr>
+            <tr>
+                <td style="padding:4px; border:1px solid #000;"><b>E-MAIL:</b> <span id="ot-out-correo"></span></td>
+                <td style="padding:4px; border:1px solid #000;"><b>COTIZACIÓN N°:</b> <span id="ot-out-cotizacion"></span></td>
+                <td style="padding:4px; border:1px solid #000;"><b>PRIORIDAD:</b> <span id="ot-out-prioridad"></span></td>
+            </tr>
+            <tr>
+                <td style="padding:4px; border:1px solid #000;"><b>RUC:</b> <span id="ot-out-ruc"></span></td>
+                <td style="padding:4px; border:1px solid #000;"><b>FACTURA N°:</b> <span id="ot-out-factura"></span></td>
+                <td style="padding:4px; border:1px solid #000;"><b>EQ. ENTREGAR EN:</b> <span id="ot-out-entregar"></span></td>
+            </tr>
+            <tr>
+                <td style="padding:4px; border:1px solid #000;"><b>CONTACTO:</b> <span id="ot-out-contacto"></span></td>
+                <td style="padding:4px; border:1px solid #000;"><b>TELÉFONO:</b> <span id="ot-out-telefono"></span></td>
+                <td style="padding:4px; border:1px solid #000;"><b>GUÍA N°:</b> <span id="ot-out-guia"></span></td>
+            </tr>
+        </table>
+
+        <div style="border:1px solid #000; padding:4px; font-size:9.5px; margin-bottom:8px;">
+            <b>DATOS PARA CERTIFICADO</b> — NOMBRE: <span id="ot-out-cert-nombre"></span> &nbsp;&nbsp; DIRECCIÓN: <span id="ot-out-cert-direccion"></span>
+        </div>
+
+        <!-- TABLA PRINCIPAL DE ÍTEMS -->
+<table class="items-table" style="width:100%; border-collapse:collapse; font-size:9px; text-align:center; margin-bottom:4px;">
+    <thead>
+        <!-- Encabezado verde normal -->
+        <tr>
+            <th style="border:1px solid #000; padding:8px 4px 5px 4px; background:var(--green-brand); color:#fff;">N°</th>
+            <th style="border:1px solid #000; padding:8px 4px 5px 4px; background:var(--green-brand); color:#fff;">SERVICIO</th>
+            <th style="border:1px solid #000; padding:8px 4px 5px 4px; background:var(--green-brand); color:#fff;">PROCEDIMIENTO</th>
+            <th style="border:1px solid #000; padding:8px 4px 5px 4px; background:var(--green-brand); color:#fff;">RANGO</th>
+            <th style="border:1px solid #000; padding:8px 4px 5px 4px; background:var(--green-brand); color:#fff;">INCERTIDUMBRE</th>
+            <th style="border:1px solid #000; padding:8px 4px 5px 4px; background:var(--green-brand); color:#fff;">CÓDIGO/SERIE</th>
+            <th style="border:1px solid #000; padding:8px 4px 5px 4px; background:var(--green-brand); color:#fff;">FECHA COMPROMISO</th>
+        </tr>
+    </thead>
+    <tbody id="ot-print-table-body"></tbody>
+    <tfoot>
+        <tr>
+            <!-- 16mm de seguridad para que la fila salte antes a la pág 2 sin apretarse -->
+            <td colspan="7" style="height: 15mm !important; border: none !important; background: transparent !important; padding: 0 !important;"></td>
+        </tr>
+    </tfoot>
+</table>
+
+        <!-- OBSERVACIONES Y FIRMAS -->
+        <div class="pdf-footer-block" style="page-break-inside: avoid; margin-top: 2px;">
+            <div style="margin-top:4px; font-size:9.5px;"><b>OBSERVACIONES:</b> <span id="ot-out-observaciones"></span></div>
+            <div style="margin-top:2px; font-size:9.5px;"><b>CONDICIONES DE CALIBRACIÓN:</b> <span id="ot-out-condiciones"></span></div>
+
+            <!-- V°B° alineado a la derecha -->
+            <div style="display: flex; justify-content: flex-end; margin-top: 35px; font-size: 11px; gap: 30px;">
+                <div> V°B° Ventas &nbsp;____________________</div>
+                <div> V°B° GSM &nbsp;____________________</div>
+            </div>
+        </div>
+
+
+    </div>
+</div>
+    <!-- ===== FIN DE LA PARTE 1 (HTML) ===== -->
+        <script src="js/app-state.js"></script>
+    <script src="js/catalogos.js"></script>
+    <script src="js/utilidades.js"></script>
+    <script src="js/almacenamiento.js"></script>
+    <script src="js/archivos.js"></script>
+    <script src="js/pdf.js"></script>
+    <script src="js/api-ruc.js"></script>
+    <script src="js/cotizacion.js"></script>
+    <script src="js/legacy-core.js"></script>
+    <script src="js/inicializacion.js"></script>
+
+
+</body>
+</html>
