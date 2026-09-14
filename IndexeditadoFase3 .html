@@ -339,7 +339,7 @@ ida y vuelta: S/. xx soles</textarea>
            <div class="page-view" id="view-estadisticas"><div class="full-wrapper">
 <div style="display:flex; gap:10px; margin-bottom:14px;"><button class="btn-pill-ocultar" id="btn-stat-general" onclick="cambiarVistaEstadistica('general')" style="background:var(--green-brand); color:#fff;">📊 General</button><button class="btn-pill-ocultar" id="btn-stat-cliente" onclick="cambiarVistaEstadistica('cliente')">👥 Por Cliente</button></div>
 <div id="stat-seccion-general">
-<div class="stat-card-row"><div class="stat-card"><div class="stat-label">Cotizaciones guardadas</div><div class="stat-value" id="stat-total-cotizaciones">0</div></div><div class="stat-card"><div class="stat-label">Equipos cotizados</div><div class="stat-value" id="stat-total-equipos">0</div></div><div class="stat-card"><div class="stat-label">Monto total cotizado</div><div class="stat-value" id="stat-monto-total">S/ 0.00</div></div><div class="stat-card"><div class="stat-label">Ticket promedio</div><div class="stat-value" id="stat-promedio">S/ 0.00</div></div><div class="stat-card"><div class="stat-label">Viáticos totales</div><div class="stat-value" id="stat-viaticos-total">S/ 0.00</div></div></div>
+<div class="stat-card-row"><div class="stat-card"><div class="stat-label">Cotizaciones guardadas</div><div class="stat-value" id="stat-total-cotizaciones">0</div></div><div class="stat-card"><div class="stat-label">Equipos cotizados</div><div class="stat-value" id="stat-total-equipos">0</div></div><div class="stat-card"><div class="stat-label">Monto total cotizado</div><div class="stat-value" id="stat-monto-total">S/ 0.00</div></div><div class="stat-card"><div class="stat-label">Ticket promedio</div><div class="stat-value" id="stat-promedio">S/ 0.00</div></div><div class="stat-card"><div class="stat-label">Viáticos totales</div><div class="stat-value" id="stat-viaticos-total">S/ 0.00</div></div><div class="stat-card"><div class="stat-label">Cotizaciones vendidas</div><div class="stat-value" id="stat-total-vendidas">0</div></div></div>
 <div class="card"><h3><span>📊 Equipos cotizados por Magnitud</span></h3><div id="stat-magnitud-breakdown"></div></div>
 </div>
 <div id="stat-seccion-cliente" style="display:none;">
@@ -637,6 +637,8 @@ ida y vuelta: S/. xx soles</textarea>
     <script src="js/pdf.js"></script>
     <script src="js/api-ruc.js"></script>
     <script src="js/cotizacion.js"></script>
+    <script src="js/historial.js"></script>
+    <script src="js/ot.js"></script>
     <script src="js/legacy-core.js"></script>
     <script src="js/inicializacion.js"></script>
 
